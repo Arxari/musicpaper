@@ -23,9 +23,35 @@ class MusicPaper:
             self.backup_current_wallpaper()
         self.using_default_wallpaper = True
         self.last_playback_status = None
+        self.expanded_song_wallpapers = self.expand_song_groups()
+
+    def expand_song_groups(self) -> Dict[str, str]:
+        expanded_mapping = {}
+        song_wallpapers = self.config.get("song_wallpapers", {})
+
+        song_groups = {k[1:]: v for k, v in song_wallpapers.items() if k.startswith('%')}
+
+        for song, wallpaper in song_wallpapers.items():
+            if song.startswith('%'): # sry if this is a bad variable to use
+                continue
+
+            matched_group = False
+            for group_name, group_songs in song_groups.items():
+                if isinstance(group_songs, list) and song in group_songs:
+                    expanded_mapping[song] = wallpaper
+                    matched_group = True
+                    break
+                elif isinstance(group_songs, str) and song.lower() in group_name.lower():
+                    expanded_mapping[song] = group_songs
+                    matched_group = True
+                    break
+
+            if not matched_group:
+                expanded_mapping[song] = wallpaper
+
+        return expanded_mapping
 
     def load_config(self) -> dict:
-        """Load configuration from TOML file or create default if it doesn't exist."""
         config_dir = Path.home() / ".config" / "musicpaper"
         config_file = config_dir / "config.toml"
 
@@ -40,7 +66,10 @@ class MusicPaper:
             "song_wallpapers": {
                 "track name": "name.jpg",
                 "Track name": "name.jpg",
-                "Track Name": "name.jpg"
+                "Track Name": "name.jpg",
+                # Example of song group
+                # "%doomer": ["doomer weekend", "gallowdance", "going away"],
+                # "%doomer": "doomer.png"
             }
         }
 
@@ -58,7 +87,6 @@ class MusicPaper:
             return default_config
 
     def backup_current_config(self):
-        """Backup the current hyprpaper config to /tmp."""
         try:
             hyprpaper_config = Path.home() / ".config" / "hypr" / "hyprpaper.conf"
             if hyprpaper_config.exists():
@@ -127,7 +155,6 @@ class MusicPaper:
             return None, None, playback_status
 
     def set_swww_wallpaper(self, filepath: str) -> bool:
-        """Set wallpaper using swww."""
         try:
             print(f"Attempting to set wallpaper to: {filepath}")
             transition_type = self.config["general"].get("swww_transition_type", "simple")
@@ -241,7 +268,6 @@ class MusicPaper:
             return self.set_swww_wallpaper(wallpaper_path)
 
     def restore_original_config(self) -> bool:
-        """Restore the original wallpaper configuration."""
         if self.using_default_wallpaper:
             print("Already using default wallpaper, no need to restore")
             return True
@@ -306,7 +332,7 @@ class MusicPaper:
                 continue
 
             if title:
-                for song_name, wallpaper_name in self.config["song_wallpapers"].items():
+                for song_name, wallpaper_name in self.expanded_song_wallpapers.items():
                     if song_name.lower() in title.lower():
                         if title != last_matched_title:
                             print(f"Matching song detected: {title} by {artist}")
