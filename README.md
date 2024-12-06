@@ -1,4 +1,4 @@
-a really dope project :3
+a really dope project that dynamically changes your wallpaper based on the currently playing song :3
 
 supports hyprpaper (crazy ik) and swww
 
