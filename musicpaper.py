@@ -29,24 +29,21 @@ class MusicPaper:
         expanded_mapping = {}
         song_wallpapers = self.config.get("song_wallpapers", {})
 
-        song_groups = {k[1:]: v for k, v in song_wallpapers.items() if k.startswith('%')}
-
-        for song, wallpaper in song_wallpapers.items():
-            if song.startswith('%'): # sry if this is a bad variable to use
+        for group_name, group_data in song_wallpapers.items():
+            if not isinstance(group_data, dict):
                 continue
 
-            matched_group = False
-            for group_name, group_songs in song_groups.items():
-                if isinstance(group_songs, list) and song in group_songs:
-                    expanded_mapping[song] = wallpaper
-                    matched_group = True
-                    break
-                elif isinstance(group_songs, str) and song.lower() in group_name.lower():
-                    expanded_mapping[song] = group_songs
-                    matched_group = True
-                    break
+            songs = group_data.get("songs", [])
+            wallpaper = group_data.get("wallpaper")
 
-            if not matched_group:
+            if not wallpaper:
+                continue
+
+            for song in songs:
+                expanded_mapping[song] = wallpaper
+
+        for song, wallpaper in song_wallpapers.items():
+            if isinstance(song, str) and not song.startswith("song_wallpapers."):
                 expanded_mapping[song] = wallpaper
 
         return expanded_mapping
@@ -68,8 +65,9 @@ class MusicPaper:
                 "Track name": "name.jpg",
                 "Track Name": "name.jpg",
                 # Example of song group
-                # "%doomer": ["doomer weekend", "gallowdance", "going away"],
-                # "%doomer": "doomer.png"
+                #[song_wallpapers.groupname]
+                #songs = ["track name", "track name", "track name"]
+                #wallpaper = "wallpapername.png"
             }
         }
 
